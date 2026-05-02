@@ -29,6 +29,9 @@ export const loginAPI = (data) => API.post('/auth/login', data);
 export const registerAPI = (data) => API.post('/auth/register', data);
 export const getMeAPI = () => API.get('/auth/me');
 export const changePasswordAPI = (data) => API.put('/auth/change-password', data);
+export const getAllUsersAPI = () => API.get('/auth/users');
+export const updateUserRoleAPI = (id, data) => API.put(`/auth/users/${id}/role`, data);
+export const deleteUserAPI = (id) => API.delete(`/auth/users/${id}`);
 
 // Employees
 export const getEmployeesAPI = (params) => API.get('/employees', { params });
@@ -47,6 +50,8 @@ export const getTodayStatusAPI = () => API.get('/attendance/today');
 export const getEmployeeAttendanceAPI = (id, params) => API.get(`/attendance/employee/${id}`, { params });
 export const getAllAttendancesAPI = (params) => API.get('/attendance/all', { params });
 export const getAttendanceSummaryAPI = (id, month, year) => API.get(`/attendance/summary/${id}/${month}/${year}`);
+export const getWeeklyAttendanceAPI = () => API.get('/attendance/weekly');
+export const getAttendanceTrendAPI = () => API.get('/attendance/trend');
 
 // Leave
 export const applyLeaveAPI = (data) => API.post('/leave/apply', data);
@@ -65,7 +70,9 @@ export const getMyPayslipsAPI = () => API.get('/payroll/my');
 export const getEmployeePayrollAPI = (id) => API.get(`/payroll/employee/${id}`);
 export const getPayslipAPI = (id) => API.get(`/payroll/payslip/${id}`);
 export const updatePayrollAPI = (id, data) => API.put(`/payroll/${id}`, data);
+export const validatePayslipAPI = (id) => API.put(`/payroll/${id}/validate`);
 export const cancelPayrollAPI = (id) => API.put(`/payroll/${id}/cancel`);
+export const validatePayrunAPI = (data) => API.post('/payroll/run/validate', data);
 
 // Reports
 export const getLaborCostReportAPI = (params) => API.get('/reports/labor-cost', { params });

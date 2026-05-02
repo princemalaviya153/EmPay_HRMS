@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, Clock, Wallet, Download, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
-import { getLaborCostReportAPI, getHeadcountReportAPI, getAllLeavesAPI } from '../../api';
+import { getLaborCostReportAPI, getHeadcountReportAPI, getAllLeavesAPI, getAttendanceTrendAPI } from '../../api';
 
 const COLORS = ['#818cf8', '#a78bfa', '#34d399', '#fb923c', '#f472b6', '#38bdf8'];
 
@@ -45,10 +45,11 @@ export default function Reports() {
     setLoading(true);
     try {
       const year = new Date().getFullYear();
-      const [laborRes, headRes, leaveRes] = await Promise.all([
+      const [laborRes, headRes, leaveRes, trendRes] = await Promise.all([
         getLaborCostReportAPI({ year }).catch(() => ({ data: { monthly: [], totals: {} } })),
         getHeadcountReportAPI().catch(() => ({ data: { total: 0 } })),
-        getAllLeavesAPI().catch(() => ({ data: { leaves: [] } }))
+        getAllLeavesAPI().catch(() => ({ data: { leaves: [] } })),
+        getAttendanceTrendAPI().catch(() => ({ data: { trend: [], avgRate: '0%' } })),
       ]);
 
       // Process Labor Cost
@@ -73,13 +74,15 @@ export default function Reports() {
       // Process Headcount
       if (headRes.data) {
         setStats(s => ({ ...s, headcountGrowth: `${headRes.data.total || 0}` }));
-        
-        // Optional: Fake attendance trend for now if no API
-        setAttendanceTrend([
-          { month: 'Aug', rate: 88 }, { month: 'Sep', rate: 92 }, { month: 'Oct', rate: 85 },
-          { month: 'Nov', rate: 90 }, { month: 'Dec', rate: 78 }, { month: 'Jan', rate: 94 },
-        ]);
-        setStats(s => ({ ...s, avgAttendance: '89.5%' }));
+      }
+
+      // Use real attendance trend data
+      if (trendRes.data?.trend?.length > 0) {
+        setAttendanceTrend(trendRes.data.trend);
+        setStats(s => ({ ...s, avgAttendance: trendRes.data.avgRate || '0%' }));
+      } else {
+        setAttendanceTrend([]);
+        setStats(s => ({ ...s, avgAttendance: '0%' }));
       }
 
       // Process Leaves

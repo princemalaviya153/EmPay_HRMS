@@ -14,11 +14,46 @@ exports.applyLeave = async (req, res) => {
       if (d.getDay() !== 0 && d.getDay() !== 6) totalDays++;
     }
 
-    if (leave_type !== 'unpaid') {
-      const allocation = await LeaveAllocation.findOne({
-        where: { employee_id: employee.id, leave_type, year: new Date().getFullYear() },
+    const typeLower = leave_type.toLowerCase();
+    const isUnpaid = typeLower.includes('unpaid');
+
+    if (!isUnpaid) {
+      // Try to find exact match or partial match
+      let allocation = await LeaveAllocation.findOne({
+        where: { 
+          employee_id: employee.id,
+          leave_type: { [Op.iLike]: leave_type },
+          year: new Date().getFullYear()
+        }
       });
-      if (!allocation) return res.status(400).json({ message: 'No leave allocation found' });
+
+      // If no exact match, try partial match (e.g., 'Annual' matches 'Annual Leave')
+      if (!allocation) {
+        allocation = await LeaveAllocation.findOne({
+          where: {
+            employee_id: employee.id,
+            leave_type: { [Op.iLike]: `%${leave_type}%` },
+            year: new Date().getFullYear()
+          }
+        });
+      }
+
+      // Reverse partial match (e.g., 'Sick Leave' matches 'sick')
+      if (!allocation) {
+        const allAllocations = await LeaveAllocation.findAll({
+          where: { employee_id: employee.id, year: new Date().getFullYear() }
+        });
+        allocation = allAllocations.find(a => 
+          leave_type.toLowerCase().includes(a.leave_type.toLowerCase()) ||
+          a.leave_type.toLowerCase().includes(leave_type.toLowerCase())
+        );
+      }
+
+      if (!allocation) {
+        return res.status(400).json({ 
+          message: `You don't have an allocation for '${leave_type}'. Available allocations: ${ (await LeaveAllocation.findAll({ where: { employee_id: employee.id } })).map(a => a.leave_type).join(', ') || 'None' }. Please contact HR.` 
+        });
+      }
       const remaining = allocation.allocated - allocation.used;
       if (totalDays > remaining) return res.status(400).json({ message: `Insufficient balance. Available: ${remaining}` });
     }
@@ -93,8 +128,14 @@ exports.rejectLeave = async (req, res) => {
 exports.allocateLeave = async (req, res) => {
   try {
     const { employee_id, leave_type, allocated, year } = req.body;
-    const [alloc, created] = await LeaveAllocation.findOrCreate({ where: { employee_id, leave_type, year }, defaults: { employee_id, leave_type, allocated, year } });
+    const [alloc, created] = await LeaveAllocation.findOrCreate({ 
+      where: { employee_id, leave_type, year }, 
+      defaults: { employee_id, leave_type, allocated, year } 
+    });
     if (!created) await alloc.update({ allocated });
     res.json({ message: created ? 'Allocated' : 'Updated', allocation: alloc });
-  } catch (error) { res.status(500).json({ message: 'Server error' }); }
+  } catch (error) { 
+    console.error('AllocateLeave error:', error);
+    res.status(500).json({ message: 'Server error' }); 
+  }
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getEmployeesAPI, getTodayStatusAPI, getAllLeavesAPI, getAllPayrollsAPI } from '../../api';
+import { getEmployeesAPI, getTodayStatusAPI, getAllLeavesAPI, getAllPayrollsAPI, getWeeklyAttendanceAPI } from '../../api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { Users, UserCheck, CalendarDays, Wallet, TrendingUp, TrendingDown, ArrowUpRight, Clock, Star, Activity } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -92,27 +92,28 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ totalEmp: 0, present: 0, pendingLeaves: 0, totalPayroll: 0 });
   const [warnings, setWarnings] = useState([]);
   const [deptData, setDeptData] = useState([]);
-  const [activityData] = useState([
-    { day: 'Mon', present: 42, absent: 8 },
-    { day: 'Tue', present: 45, absent: 5 },
-    { day: 'Wed', present: 38, absent: 12 },
-    { day: 'Thu', present: 47, absent: 3 },
-    { day: 'Fri', present: 43, absent: 7 },
-    { day: 'Sat', present: 20, absent: 30 },
-    { day: 'Sun', present: 5, absent: 45 },
-  ]);
+  const [activityData, setActivityData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
-      const [empRes, todayRes, leaveRes, payrollRes] = await Promise.all([
+      const [empRes, todayRes, leaveRes, payrollRes, weeklyRes] = await Promise.all([
         getEmployeesAPI().catch(() => ({ data: { employees: [] } })),
         getTodayStatusAPI().catch(() => ({ data: { present: 0 } })),
         getAllLeavesAPI({ status: 'pending' }).catch(() => ({ data: { leaves: [] } })),
         getAllPayrollsAPI({ month: new Date().getMonth() + 1, year: new Date().getFullYear() }).catch(() => ({ data: { payrolls: [] } })),
+        getWeeklyAttendanceAPI().catch(() => ({ data: { weekly: [] } })),
       ]);
+
+      // Set weekly attendance data for chart
+      if (weeklyRes.data?.weekly?.length > 0) {
+        setActivityData(weeklyRes.data.weekly);
+      } else {
+        // Fallback if no data
+        setActivityData(['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => ({ day, present: 0, absent: 0 })));
+      }
       const employees = empRes.data.employees || [];
       const deptMap = {};
       const missingBankNames = [];

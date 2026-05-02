@@ -41,7 +41,7 @@ const menuConfig = {
 };
 
 export default function Sidebar({ collapsed, setCollapsed }) {
-  const { user, logout } = useAuth();
+  const { user, employee, logout } = useAuth();
   const navigate = useNavigate();
   const menu = menuConfig[user?.role] || menuConfig.employee;
   const [hoveredItem, setHoveredItem] = useState(null);
@@ -181,7 +181,11 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '14px', fontWeight: '700', color: '#fff',
               }}>
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                {employee?.profile_picture ? (
+                  <img src={employee.profile_picture} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '10px', objectFit: 'cover'}} />
+                ) : (
+                  user?.name?.charAt(0)?.toUpperCase() || 'U'
+                )}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</div>

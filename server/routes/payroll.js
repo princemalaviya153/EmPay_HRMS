@@ -1,14 +1,21 @@
 const router = require('express').Router();
-const ctrl = require('../controllers/payrollController');
-const auth = require('../middleware/auth');
+const ctrl   = require('../controllers/payrollController');
+const auth   = require('../middleware/auth');
 const { allow } = require('../middleware/roleCheck');
 
-router.post('/generate', auth, allow('admin', 'payroll_officer'), ctrl.generatePayrun);
-router.get('/', auth, allow('admin', 'payroll_officer'), ctrl.getAllPayrolls);
-router.get('/my', auth, ctrl.getMyPayslips);
-router.get('/employee/:id', auth, allow('admin', 'payroll_officer'), ctrl.getEmployeePayroll);
-router.get('/payslip/:id', auth, ctrl.getPayslip);
-router.put('/:id', auth, allow('admin', 'payroll_officer'), ctrl.updatePayroll);
-router.put('/:id/cancel', auth, allow('admin', 'payroll_officer'), ctrl.cancelPayroll);
+const hr = allow('admin', 'payroll_officer');
+
+router.post('/generate',         auth, hr, ctrl.generatePayrun);
+router.post('/run/validate',     auth, hr, ctrl.validatePayrun);   // validate entire payrun
+
+router.get('/',                  auth, hr, ctrl.getAllPayrolls);
+router.get('/my',                auth,     ctrl.getMyPayslips);
+router.get('/employee/:id',      auth, hr, ctrl.getEmployeePayroll);
+router.get('/payslip/:id',       auth,     ctrl.getPayslip);
+
+router.put('/run/validate',      auth, hr, ctrl.validatePayrun);
+router.put('/:id/validate',      auth, hr, ctrl.validatePayroll);  // validate single payslip
+router.put('/:id/cancel',        auth, hr, ctrl.cancelPayroll);
+router.put('/:id',               auth, hr, ctrl.updatePayroll);
 
 module.exports = router;

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getEmployeeAPI, updateEmployeeAPI, changePasswordAPI } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
-import { ArrowLeft, User, Shield, Wallet, FileText, Save, Eye, EyeOff, Edit3 } from 'lucide-react';
+import { ArrowLeft, User, Shield, Wallet, FileText, Save, Eye, EyeOff, Edit3, Camera } from 'lucide-react';
 
 export default function EmployeeProfile() {
   const { id } = useParams();
@@ -52,8 +52,8 @@ export default function EmployeeProfile() {
         aadhar_number: e.aadhar_number || '',
         personal_email: e.personal_email || '', mailing_address: e.mailing_address || '',
         education: e.education || '', work_experience: e.work_experience || '',
-        skills: e.skills || '', bio: e.bio || '',
         about_job: e.about_job || '', interests: e.interests || '',
+        profile_picture: e.profile_picture || '',
         // Salary
         wage_type: e.wage_type || 'fixed',
         monthly_wage: e.monthly_wage || 0,
@@ -75,6 +75,19 @@ export default function EmployeeProfile() {
     try { await updateEmployeeAPI(id, form); toast.success('Profile updated'); load(); }
     catch (err) { toast.error(err.response?.data?.message || 'Update failed'); }
     finally { setSaving(false); }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error('Image must be less than 2MB');
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm(f => ({ ...f, profile_picture: reader.result }));
+      // Optionally automatically save image update or wait for "Save Changes" button
+      toast.success("Image selected. Don't forget to save changes!");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePasswordChange = async (e) => {
@@ -128,8 +141,17 @@ export default function EmployeeProfile() {
       {/* Profile Header */}
       <div className="profile-header-card">
         <div style={{ position: 'relative' }}>
-          <div className="profile-avatar-lg">{employee.user?.name?.charAt(0).toUpperCase()}</div>
-          {canEdit && <button style={{ position:'absolute',bottom:-2,right:-2,width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',border:'2px solid #020817',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',padding:0 }}><Edit3 size={12}/></button>}
+          {form.profile_picture ? (
+            <img src={form.profile_picture} alt="Profile" className="profile-avatar-lg" style={{ objectFit: 'cover' }} />
+          ) : (
+            <div className="profile-avatar-lg">{employee.user?.name?.charAt(0).toUpperCase()}</div>
+          )}
+          {canEdit && (
+            <label style={{ position:'absolute',bottom:-2,right:-2,width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',border:'2px solid #020817',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',padding:0 }}>
+              <Camera size={12}/>
+              <input type="file" accept="image/*" style={{display:'none'}} onChange={handleImageUpload} />
+            </label>
+          )}
         </div>
         <div className="profile-meta">
           <h2>{employee.user?.name}</h2>

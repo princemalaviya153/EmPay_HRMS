@@ -110,10 +110,6 @@ function SignIn({ onSwitch }) {
         <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Sign in to your EmPay workspace</p>
       </div>
 
-      {/* Logo */}
-      <div style={{ width: '100%', height: '48px', border: '1.5px dashed rgba(124,58,237,0.4)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '28px', background: 'rgba(124,58,237,0.06)' }}>
-        <span style={{ fontSize: '13px', color: '#a78bfa', fontWeight: '600' }}>App / Web Logo</span>
-      </div>
 
       {err && <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '10px 14px', marginBottom: '16px', fontSize: '12px', color: '#fca5a5' }}>⚠️ {err}</div>}
 
@@ -152,7 +148,7 @@ function SignIn({ onSwitch }) {
 
 /* ═══ SIGN UP ═══ */
 function SignUp({ onSwitch }) {
-  const [form, setForm] = useState({ companyName: '', name: '', email: '', phone: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ companyName: '', name: '', email: '', phone: '' });
   const [logoPreview, setLogoPreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -168,8 +164,6 @@ function SignUp({ onSwitch }) {
     if (!form.name.trim()) e.name = 1;
     if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 1;
     if (!form.phone.trim()) e.phone = 1;
-    if (form.password.length < 6) e.password = 1;
-    if (form.password !== form.confirm) e.confirm = 1;
     return e;
   };
 
@@ -184,7 +178,8 @@ function SignUp({ onSwitch }) {
       await registerAPI({
         name: form.name,
         email: form.email,
-        password: form.password,
+        password: tempPw,
+        login_id: generatedId,
         role: 'employee',
         company_name: form.companyName,
         phone: form.phone,
@@ -224,7 +219,7 @@ function SignUp({ onSwitch }) {
         <p style={{ fontSize: '11px', color: '#fbbf24', marginTop: '6px' }}>⚠️ Must change on first login</p>
       </div>
 
-      <button onClick={() => { setDone(null); setForm({ companyName: '', name: '', email: '', phone: '', password: '', confirm: '' }); }} style={btnPrimary}>+ Create Another</button>
+      <button onClick={() => { setDone(null); setForm({ companyName: '', name: '', email: '', phone: '' }); }} style={btnPrimary}>+ Create Another</button>
       <button onClick={onSwitch} style={{ marginTop: '12px', background: 'none', border: 'none', color: '#a78bfa', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>← Back to Sign In</button>
     </motion.div>
   );
@@ -261,8 +256,6 @@ function SignUp({ onSwitch }) {
           <div><Lbl>Name :-</Lbl><IconInput icon={User} value={form.name} onChange={set('name')} placeholder="John Doe" error={errors.name} /></div>
           <div><Lbl>Email :-</Lbl><IconInput icon={Mail} type="email" value={form.email} onChange={set('email')} placeholder="john@company.com" error={errors.email} /></div>
           <div><Lbl>Phone :-</Lbl><IconInput icon={Phone} type="tel" value={form.phone} onChange={set('phone')} placeholder="+91 9876543210" error={errors.phone} /></div>
-          <div><Lbl>Password :-</Lbl><PwField value={form.password} onChange={set('password')} error={errors.password} /></div>
-          <div><Lbl>Confirm Password :-</Lbl><PwField value={form.confirm} onChange={set('confirm')} error={errors.confirm} /></div>
         </div>
 
         {preview && (

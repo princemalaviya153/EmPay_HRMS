@@ -79,13 +79,13 @@ exports.createEmployee = async (req, res) => {
 
     // Auto-allocate leaves for current year
     const currentYear = new Date().getFullYear();
-    const leaveTypes = [
-      { leave_type: 'sick', allocated: 12 },
-      { leave_type: 'casual', allocated: 12 },
-      { leave_type: 'earned', allocated: 15 },
+    const leaveTypesInitial = [
+      { leave_type: 'Annual Leave', allocated: 15 },
+      { leave_type: 'Sick Leave', allocated: 12 },
+      { leave_type: 'Casual Leave', allocated: 12 },
     ];
 
-    for (const lt of leaveTypes) {
+    for (const lt of leaveTypesInitial) {
       await LeaveAllocation.create({
         employee_id: employee.id,
         leave_type: lt.leave_type,
@@ -138,7 +138,7 @@ exports.updateEmployee = async (req, res) => {
       'blood_group', 'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relation',
       'bank_name', 'bank_account_no', 'ifsc_code', 'pan_number', 'aadhar_number',
       'personal_email', 'mailing_address', 'education', 'work_experience', 'skills',
-      'bio', 'about_job', 'interests'
+      'bio', 'about_job', 'interests', 'profile_picture'
     ];
 
     const adminFields = [

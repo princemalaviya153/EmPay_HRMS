@@ -9,9 +9,9 @@ import Background3D from '../../components/Background3D';
 
 const DEMO = [
   { label: 'Admin', icon: '👑', email: 'admin@empay.com', pw: 'Admin@123', color: '#6366f1', desc: 'Full access' },
-  { label: 'HR', icon: '👥', email: 'hr@empay.com', pw: 'Hr@123', color: '#8b5cf6', desc: 'HR module' },
-  { label: 'Payroll', icon: '💰', email: 'payroll@empay.com', pw: 'Pay@123', color: '#06b6d4', desc: 'Payroll module' },
-  { label: 'Employee', icon: '👤', email: 'emp@empay.com', pw: 'Emp@123', color: '#10b981', desc: 'Self-service' },
+  { label: 'HR', icon: '👥', email: 'priya@empay.com', pw: 'Pass@123', color: '#8b5cf6', desc: 'HR module' },
+  { label: 'Payroll', icon: '💰', email: 'rahul@empay.com', pw: 'Pass@123', color: '#06b6d4', desc: 'Payroll module' },
+  { label: 'Employee', icon: '👤', email: 'anita@empay.com', pw: 'Pass@123', color: '#10b981', desc: 'Self-service' },
 ];
 
 export default function Login() {
@@ -52,20 +52,7 @@ export default function Login() {
 
         {/* Left: Branding */}
         <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px' }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '16px',
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '24px', fontWeight: '900', color: '#fff',
-              boxShadow: '0 8px 32px rgba(99,102,241,0.4)',
-            }}>E</div>
-            <div>
-              <div style={{ fontSize: '22px', fontWeight: '800', fontFamily: 'Space Grotesk, sans-serif', background: 'linear-gradient(135deg, #f8fafc, #a5b4fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>EmPay X</div>
-              <div style={{ fontSize: '12px', color: '#475569', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: '600' }}>HRMS Platform</div>
-            </div>
-          </div>
+
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }}

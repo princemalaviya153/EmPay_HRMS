@@ -214,10 +214,12 @@ exports.getTodayStatus = async (req, res) => {
 
 exports.getAllAttendances = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, date } = req.query;
     const where = {};
 
-    if (month && year) {
+    if (date) {
+      where.date = date;
+    } else if (month && year) {
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
       const endDate = new Date(year, month, 0).toISOString().split('T')[0];
       where.date = { [Op.between]: [startDate, endDate] };
@@ -241,6 +243,93 @@ exports.getAllAttendances = async (req, res) => {
     res.json({ attendances, summary });
   } catch (error) {
     console.error('GetAllAttendances error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getWeeklyAttendance = async (req, res) => {
+  try {
+    const totalEmployees = await Employee.count({ where: { is_active: true } });
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sun
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const result = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+
+      const presentCount = await Attendance.count({
+        where: { date: dateStr, status: { [Op.in]: ['present', 'half_day'] } },
+      });
+
+      result.push({
+        day: days[i],
+        date: dateStr,
+        present: presentCount,
+        absent: Math.max(0, totalEmployees - presentCount),
+      });
+    }
+
+    res.json({ weekly: result, totalEmployees });
+  } catch (error) {
+    console.error('GetWeeklyAttendance error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getMonthlyAttendanceTrend = async (req, res) => {
+  try {
+    const totalEmployees = await Employee.count({ where: { is_active: true } });
+    const months = [];
+    const now = new Date();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const yr = d.getFullYear();
+      const mo = d.getMonth(); // 0-indexed
+      const startDate = `${yr}-${String(mo + 1).padStart(2, '0')}-01`;
+      const endDate = new Date(yr, mo + 1, 0).toISOString().split('T')[0];
+
+      const workingDays = Math.max(1, (() => {
+        let count = 0;
+        const temp = new Date(yr, mo, 1);
+        while (temp.getMonth() === mo) {
+          const day = temp.getDay();
+          if (day !== 0 && day !== 6) count++;
+          temp.setDate(temp.getDate() + 1);
+        }
+        return count;
+      })());
+
+      const presentCount = await Attendance.count({
+        where: {
+          date: { [Op.between]: [startDate, endDate] },
+          status: { [Op.in]: ['present', 'half_day', 'on_leave'] },
+        },
+      });
+
+      const maxPossible = totalEmployees * workingDays;
+      const rate = maxPossible > 0 ? Math.round((presentCount / maxPossible) * 100) : 0;
+
+      months.push({
+        month: monthNames[mo],
+        rate: Math.min(100, rate),
+        present: presentCount,
+        total: maxPossible,
+      });
+    }
+
+    const avg = months.length > 0 ? (months.reduce((s, m) => s + m.rate, 0) / months.length).toFixed(1) : 0;
+    res.json({ trend: months, avgRate: `${avg}%` });
+  } catch (error) {
+    console.error('GetMonthlyAttendanceTrend error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -1,175 +1,179 @@
-import { useState } from 'react';
-import { Settings, Bell, Shield, Palette, Database, Globe, ChevronRight, Save, Check } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { getAllUsersAPI, updateUserRoleAPI, deleteUserAPI, registerAPI } from '../../api';
+import { Settings, Users, Shield, UserPlus, Trash2, Check, ChevronDown, Search, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
-const settingsSections = [
-  { key: 'general', label: 'General', icon: Settings, color: '#94a3b8' },
-  { key: 'notifications', label: 'Notifications', icon: Bell, color: '#fb923c' },
-  { key: 'security', label: 'Security', icon: Shield, color: '#f472b6' },
-  { key: 'appearance', label: 'Appearance', icon: Palette, color: '#818cf8' },
-  { key: 'data', label: 'Data & Backup', icon: Database, color: '#38bdf8' },
-  { key: 'localization', label: 'Localization', icon: Globe, color: '#34d399' },
+const ROLES = [
+  { value: 'admin', label: 'Admin', color: '#f472b6', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
+  { value: 'hr_officer', label: 'HR Officer', color: '#818cf8', bg: 'rgba(129,140,248,0.1)', border: 'rgba(129,140,248,0.2)' },
+  { value: 'payroll_officer', label: 'Payroll Officer', color: '#fb923c', bg: 'rgba(251,146,60,0.1)', border: 'rgba(251,146,60,0.2)' },
+  { value: 'employee', label: 'Employee', color: '#34d399', bg: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.2)' },
 ];
 
-function ToggleSwitch({ checked, onChange, color = '#6366f1' }) {
+const MODULES = [
+  { key: 'employees', label: 'Employees', roles: ['admin', 'hr_officer'] },
+  { key: 'attendance', label: 'Attendance', roles: ['admin', 'hr_officer', 'payroll_officer', 'employee'] },
+  { key: 'time_off', label: 'Time Off', roles: ['admin', 'hr_officer', 'payroll_officer', 'employee'] },
+  { key: 'payroll', label: 'Payroll', roles: ['admin', 'payroll_officer'] },
+  { key: 'reports', label: 'Reports', roles: ['admin', 'hr_officer', 'payroll_officer'] },
+  { key: 'settings', label: 'Settings', roles: ['admin'] },
+];
+
+function getRoleMeta(role) {
+  return ROLES.find(r => r.value === role) || ROLES[3];
+}
+
+function RoleDropdown({ value, onChange, disabled }) {
+  const [open, setOpen] = useState(false);
+  const current = getRoleMeta(value);
+
   return (
-    <div onClick={onChange} style={{
-      width: '44px', height: '24px', borderRadius: '100px', cursor: 'pointer', position: 'relative', transition: 'all 0.3s',
-      background: checked ? color : 'rgba(255,255,255,0.1)',
-      border: `1px solid ${checked ? color : 'rgba(255,255,255,0.1)'}`,
-      boxShadow: checked ? `0 0 12px ${color}50` : 'none',
-    }}>
-      <div style={{ position: 'absolute', top: '2px', left: checked ? '22px' : '2px', width: '18px', height: '18px', borderRadius: '50%', background: '#fff', transition: 'all 0.3s', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }} />
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => !disabled && setOpen(!open)}
+        disabled={disabled}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          background: current.bg, border: `1px solid ${current.border}`,
+          borderRadius: '10px', padding: '6px 14px', cursor: disabled ? 'not-allowed' : 'pointer',
+          color: current.color, fontSize: '12px', fontWeight: '600',
+          fontFamily: 'Inter, sans-serif', opacity: disabled ? 0.6 : 1,
+          transition: 'all 0.2s',
+        }}
+      >
+        {current.label}
+        <ChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'absolute', top: '100%', right: 0, marginTop: '4px',
+              background: 'rgba(2,8,23,0.97)', backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px',
+              padding: '6px', minWidth: '180px', zIndex: 100,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+            }}
+          >
+            {ROLES.map(r => (
+              <button key={r.value}
+                onClick={() => { onChange(r.value); setOpen(false); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+                  padding: '10px 12px', borderRadius: '10px', border: 'none',
+                  background: value === r.value ? `${r.color}15` : 'transparent',
+                  cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'Inter, sans-serif',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = `${r.color}15`}
+                onMouseLeave={e => { if (value !== r.value) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.color }} />
+                <span style={{ fontSize: '13px', fontWeight: '600', color: r.color }}>{r.label}</span>
+                {value === r.value && <Check size={13} color={r.color} style={{ marginLeft: 'auto' }} />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 export default function SettingsPage() {
-  const [active, setActive] = useState('general');
-  const [saved, setSaved] = useState(false);
-  const [settings, setSettings] = useState({
-    companyName: 'EmPay X Corp',
-    companyEmail: 'admin@empay.com',
-    timezone: 'Asia/Kolkata',
-    currency: 'INR',
-    emailNotifications: true,
-    pushNotifications: false,
-    leaveAlerts: true,
-    payrollAlerts: true,
-    twoFactor: false,
-    sessionTimeout: '30',
-    darkMode: true,
-    compactMode: false,
-    autoBackup: true,
-    backupFrequency: 'daily',
-  });
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'employee' });
+  const [adding, setAdding] = useState(false);
 
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
-  const toggle = (key) => setSettings(p => ({ ...p, [key]: !p[key] }));
+  useEffect(() => { loadUsers(); }, []);
 
-  const inputStyle = { width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#f8fafc', borderRadius: '12px', padding: '12px 14px', fontSize: '14px', outline: 'none', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' };
-  const labelStyle = { fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' };
-  const rowStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' };
-
-  const renderSection = () => {
-    switch (active) {
-      case 'general': return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: 'Space Grotesk, sans-serif' }}>General Settings</h3>
-          {[
-            { field: 'companyName', label: 'Company Name', type: 'text' },
-            { field: 'companyEmail', label: 'Company Email', type: 'email' },
-          ].map(({ field, label, type }) => (
-            <div key={field}>
-              <label style={labelStyle}>{label}</label>
-              <input type={type} value={settings[field]} onChange={e => setSettings(p => ({ ...p, [field]: e.target.value }))} style={inputStyle} />
-            </div>
-          ))}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={labelStyle}>Timezone</label>
-              <select value={settings.timezone} onChange={e => setSettings(p => ({ ...p, timezone: e.target.value }))} style={inputStyle}>
-                <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">America/New_York</option>
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>Currency</label>
-              <select value={settings.currency} onChange={e => setSettings(p => ({ ...p, currency: e.target.value }))} style={inputStyle}>
-                <option value="INR">INR (₹)</option>
-                <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (€)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      );
-      case 'notifications': return (
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '20px' }}>Notification Preferences</h3>
-          {[
-            { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive important updates via email', color: '#818cf8' },
-            { key: 'pushNotifications', label: 'Push Notifications', desc: 'Browser push notifications', color: '#fb923c' },
-            { key: 'leaveAlerts', label: 'Leave Request Alerts', desc: 'Notify on new leave requests', color: '#34d399' },
-            { key: 'payrollAlerts', label: 'Payroll Alerts', desc: 'Alerts when payroll is processed', color: '#f472b6' },
-          ].map(({ key, label, desc, color }) => (
-            <div key={key} style={rowStyle}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', marginBottom: '3px' }}>{label}</div>
-                <div style={{ fontSize: '12px', color: '#475569' }}>{desc}</div>
-              </div>
-              <ToggleSwitch checked={settings[key]} onChange={() => toggle(key)} color={color} />
-            </div>
-          ))}
-        </div>
-      );
-      case 'security': return (
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '20px' }}>Security Settings</h3>
-          <div style={rowStyle}>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', marginBottom: '3px' }}>Two-Factor Authentication</div>
-              <div style={{ fontSize: '12px', color: '#475569' }}>Add an extra layer of security</div>
-            </div>
-            <ToggleSwitch checked={settings.twoFactor} onChange={() => toggle('twoFactor')} color="#f472b6" />
-          </div>
-          <div style={{ paddingTop: '20px' }}>
-            <label style={labelStyle}>Session Timeout (minutes)</label>
-            <select value={settings.sessionTimeout} onChange={e => setSettings(p => ({ ...p, sessionTimeout: e.target.value }))} style={inputStyle}>
-              {['15', '30', '60', '120'].map(v => <option key={v} value={v}>{v} minutes</option>)}
-            </select>
-          </div>
-          <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(244,114,182,0.08)', border: '1px solid rgba(244,114,182,0.2)', borderRadius: '14px' }}>
-            <p style={{ fontSize: '13px', color: '#f472b6', fontWeight: '600', marginBottom: '4px' }}>⚠️ Danger Zone</p>
-            <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>These actions are irreversible. Proceed with caution.</p>
-            <button style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: '10px', padding: '8px 16px', color: '#f87171', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-              Reset All Data
-            </button>
-          </div>
-        </div>
-      );
-      case 'appearance': return (
-        <div>
-          <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#f8fafc', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '20px' }}>Appearance</h3>
-          {[
-            { key: 'darkMode', label: 'Dark Mode', desc: 'Use dark theme across the platform', color: '#818cf8' },
-            { key: 'compactMode', label: 'Compact Mode', desc: 'Reduce spacing for more content', color: '#38bdf8' },
-          ].map(({ key, label, desc, color }) => (
-            <div key={key} style={rowStyle}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', marginBottom: '3px' }}>{label}</div>
-                <div style={{ fontSize: '12px', color: '#475569' }}>{desc}</div>
-              </div>
-              <ToggleSwitch checked={settings[key]} onChange={() => toggle(key)} color={color} />
-            </div>
-          ))}
-          <div style={{ marginTop: '24px' }}>
-            <label style={labelStyle}>Accent Color</label>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              {['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e'].map(c => (
-                <button key={c} style={{ width: '36px', height: '36px', borderRadius: '10px', background: c, border: '2px solid transparent', cursor: 'pointer', boxShadow: `0 4px 12px ${c}50`, transition: 'all 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-      default: return (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#334155' }}>
-          <Settings size={48} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.3 }} />
-          <p>Section coming soon</p>
-        </div>
-      );
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await getAllUsersAPI();
+      setUsers(res.data.users || []);
+    } catch (err) {
+      toast.error('Failed to load users');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await updateUserRoleAPI(userId, { role: newRole });
+      toast.success('Role updated successfully');
+      loadUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update role');
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to delete "${userName}"? This action cannot be undone.`)) return;
+    try {
+      await deleteUserAPI(userId);
+      toast.success('User deleted');
+      loadUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete user');
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      toast.error('Please fill all fields');
+      return;
+    }
+    setAdding(true);
+    try {
+      await registerAPI(newUser);
+      toast.success('User created successfully');
+      setNewUser({ name: '', email: '', password: '', role: 'employee' });
+      setShowAddUser(false);
+      loadUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create user');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const filtered = users.filter(u =>
+    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.email?.toLowerCase().includes(search.toLowerCase()) ||
+    u.role?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const baseInputStyle = {
+    width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+    color: '#f8fafc', borderRadius: '12px', padding: '12px 14px', fontSize: '14px',
+    outline: 'none', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box'
+  };
+
+  const selectStyle = {
+    ...baseInputStyle,
+    WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', backgroundSize: '16px'
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: '1100px' }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: '1400px' }}>
+
       {/* Header */}
-      <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} style={{ marginBottom: '28px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+      <motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        style={{ marginBottom: '28px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(148,163,184,0.1)', border: '1px solid rgba(148,163,184,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
@@ -179,47 +183,276 @@ export default function SettingsPage() {
               Settings
             </h1>
           </div>
-          <p style={{ color: '#475569', fontSize: '14px' }}>Configure your EmPay X workspace</p>
+          <p style={{ color: '#475569', fontSize: '14px' }}>Manage users, roles, and module access rights</p>
         </div>
 
-        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleSave}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: saved ? 'linear-gradient(135deg, #059669, #10b981)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)', border: 'none', borderRadius: '12px', padding: '10px 20px', color: '#fff', fontSize: '13px', fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif', boxShadow: saved ? '0 4px 20px rgba(5,150,105,0.35)' : '0 4px 20px rgba(99,102,241,0.35)', transition: 'all 0.3s' }}
+        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+          onClick={() => setShowAddUser(!showAddUser)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            border: 'none', borderRadius: '12px', padding: '10px 20px',
+            color: '#fff', fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 20px rgba(99,102,241,0.35)',
+          }}
         >
-          {saved ? <><Check size={15} /> Saved!</> : <><Save size={15} /> Save Changes</>}
+          <UserPlus size={15} /> Add User
         </motion.button>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '24px' }}>
-        {/* Sidebar */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '12px', height: 'fit-content' }}>
-          {settingsSections.map(s => (
-            <button key={s.key} onClick={() => setActive(s.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '12px', width: '100%',
-                padding: '11px 14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                background: active === s.key ? `${s.color}15` : 'transparent',
-                transition: 'all 0.15s', marginBottom: '2px', fontFamily: 'Inter, sans-serif',
-                color: active === s.key ? s.color : '#475569',
-              }}
-              onMouseEnter={e => { if (active !== s.key) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
-              onMouseLeave={e => { if (active !== s.key) e.currentTarget.style.background = 'transparent'; }}
-            >
-              <div style={{ width: '30px', height: '30px', borderRadius: '9px', background: active === s.key ? `${s.color}20` : 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}>
-                <s.icon size={15} />
+      {/* Add User Panel */}
+      <AnimatePresence>
+        {showAddUser && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div style={{
+              background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(129,140,248,0.2)', borderRadius: '20px', padding: '24px',
+            }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', fontFamily: 'Space Grotesk, sans-serif', marginBottom: '20px' }}>
+                Create New User
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto auto', gap: '12px', alignItems: 'end' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>Full Name</label>
+                  <input value={newUser.name} onChange={e => setNewUser(p => ({ ...p, name: e.target.value }))} placeholder="John Doe" style={baseInputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>Email</label>
+                  <input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} placeholder="john@empay.com" style={baseInputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>Password</label>
+                  <input type="password" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" style={baseInputStyle} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '6px' }}>Role</label>
+                  <select value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}
+                    style={{ ...selectStyle, cursor: 'pointer' }}
+                  >
+                    {ROLES.map(r => <option key={r.value} value={r.value} style={{ background: '#0f172a' }}>{r.label}</option>)}
+                  </select>
+                </div>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  onClick={handleAddUser} disabled={adding}
+                  style={{
+                    background: '#34d399', border: 'none', borderRadius: '12px',
+                    padding: '12px 20px', color: '#fff', fontSize: '13px', fontWeight: '700',
+                    cursor: adding ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif',
+                    opacity: adding ? 0.7 : 1, whiteSpace: 'nowrap',
+                  }}
+                >
+                  {adding ? 'Creating...' : 'Create'}
+                </motion.button>
               </div>
-              <span style={{ fontSize: '13.5px', fontWeight: active === s.key ? '700' : '500', flex: 1, textAlign: 'left' }}>{s.label}</span>
-              {active === s.key && <ChevronRight size={14} />}
-            </button>
-          ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* User Setting Table */}
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}
+        style={{
+          background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px',
+          overflow: 'hidden', marginBottom: '24px',
+        }}
+      >
+        {/* Table Header Bar */}
+        <div style={{
+          padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(129,140,248,0.1)', border: '1px solid rgba(129,140,248,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+              <Users size={15} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', fontFamily: 'Space Grotesk, sans-serif' }}>User Setting</h3>
+              <p style={{ fontSize: '12px', color: '#475569' }}>Select user access rights as per their role and responsibilities</p>
+            </div>
+          </div>
+          <div style={{ position: 'relative', width: '260px' }}>
+            <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search users..."
+              style={{ ...baseInputStyle, paddingLeft: '36px', fontSize: '13px' }}
+            />
+          </div>
         </div>
 
-        {/* Content */}
-        <motion.div key={active} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}
-          style={{ background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', padding: '32px' }}
-        >
-          {renderSection()}
-        </motion.div>
-      </div>
+        {loading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+            <div style={{ width: '36px', height: '36px', border: '3px solid rgba(129,140,248,0.2)', borderTop: '3px solid #818cf8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  {['User Name', 'Login Id', 'Email', 'Role', 'Actions'].map(h => (
+                    <th key={h} style={{
+                      padding: '14px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '700',
+                      color: '#334155', textTransform: 'uppercase', letterSpacing: '0.1em',
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((u, i) => {
+                  const isSelf = u.id === currentUser?.id;
+                  const roleMeta = getRoleMeta(u.role);
+                  return (
+                    <motion.tr key={u.id}
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <td style={{ padding: '14px 24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{
+                            width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                            background: `linear-gradient(135deg, ${roleMeta.color}30, ${roleMeta.color}10)`,
+                            border: `1px solid ${roleMeta.border}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '14px', fontWeight: '700', color: roleMeta.color,
+                          }}>
+                            {u.name?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>
+                              {u.name} {isSelf && <span style={{ fontSize: '10px', color: '#818cf8', background: 'rgba(129,140,248,0.1)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>You</span>}
+                            </div>
+                            {u.employee?.employee_code && (
+                              <div style={{ fontSize: '11px', color: '#475569' }}>{u.employee.employee_code}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '14px 24px', fontSize: '13px', color: '#64748b', fontFamily: 'JetBrains Mono, monospace' }}>
+                        {u.email?.split('@')[0]}
+                      </td>
+                      <td style={{ padding: '14px 24px', fontSize: '13px', color: '#94a3b8' }}>
+                        {u.email}
+                      </td>
+                      <td style={{ padding: '14px 24px' }}>
+                        <RoleDropdown
+                          value={u.role}
+                          onChange={(newRole) => handleRoleChange(u.id, newRole)}
+                          disabled={isSelf}
+                        />
+                      </td>
+                      <td style={{ padding: '14px 24px' }}>
+                        <motion.button
+                          whileHover={!isSelf ? { scale: 1.1 } : {}}
+                          whileTap={!isSelf ? { scale: 0.9 } : {}}
+                          onClick={() => handleDeleteUser(u.id, u.name)}
+                          disabled={isSelf}
+                          style={{
+                            width: '32px', height: '32px', borderRadius: '8px',
+                            background: isSelf ? 'rgba(255,255,255,0.02)' : 'rgba(248,113,113,0.08)',
+                            border: isSelf ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(248,113,113,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: isSelf ? '#334155' : '#f87171',
+                            cursor: isSelf ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </motion.button>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+                {!filtered.length && (
+                  <tr>
+                    <td colSpan={5} style={{ padding: '60px', textAlign: 'center' }}>
+                      <Users size={48} color="#1e3a5f" style={{ margin: '0 auto 16px', display: 'block' }} />
+                      <p style={{ color: '#334155', fontSize: '14px' }}>No users found</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Module Access Rights Matrix */}
+      <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
+        style={{
+          background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
+            <Shield size={15} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', fontFamily: 'Space Grotesk, sans-serif' }}>Module Access Rights</h3>
+            <p style={{ fontSize: '12px', color: '#475569' }}>Access rights configured per role. These define what users are allowed to access.</p>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <th style={{ padding: '14px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>Module</th>
+                {ROLES.map(r => (
+                  <th key={r.value} style={{ padding: '14px 24px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: r.color, textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    {r.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {MODULES.map((mod, i) => (
+                <motion.tr key={mod.key}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 + i * 0.04 }}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                >
+                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>{mod.label}</td>
+                  {ROLES.map(r => {
+                    const hasAccess = mod.roles.includes(r.value);
+                    return (
+                      <td key={r.value} style={{ padding: '14px 24px', textAlign: 'center' }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '8px', margin: '0 auto',
+                          background: hasAccess ? `${r.color}15` : 'rgba(255,255,255,0.02)',
+                          border: `1px solid ${hasAccess ? `${r.color}30` : 'rgba(255,255,255,0.05)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: hasAccess ? r.color : '#1e293b',
+                        }}>
+                          {hasAccess ? <Check size={14} /> : '—'}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Access Rights Info */}
+        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <AlertCircle size={14} color="#fb923c" />
+          <p style={{ fontSize: '12px', color: '#64748b' }}>
+            Access rights are configured on a module basis, allowing specific permissions for each module.
+            Roles: <strong style={{ color: '#f472b6' }}>Admin</strong> (full access) · <strong style={{ color: '#818cf8' }}>HR Officer</strong> (employee & leave management) · <strong style={{ color: '#fb923c' }}>Payroll Officer</strong> (payroll & attendance) · <strong style={{ color: '#34d399' }}>Employee</strong> (self-service only)
+          </p>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }

@@ -188,7 +188,11 @@ export default function Layout() {
                     fontSize: '13px', fontWeight: '700', color: '#fff',
                     boxShadow: '0 0 16px rgba(99,102,241,0.3)',
                   }}>
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {employee?.profile_picture ? (
+                      <img src={employee.profile_picture} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '10px', objectFit: 'cover'}} />
+                    ) : (
+                      user?.name?.charAt(0)?.toUpperCase() || 'U'
+                    )}
                   </div>
                   {/* Status dot — green if checked in, red if not */}
                   <div style={{

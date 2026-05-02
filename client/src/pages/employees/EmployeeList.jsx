@@ -58,11 +58,17 @@ export default function EmployeeList() {
     finally { setSubmitting(false); }
   };
 
-  const inputStyle = {
+  const baseInputStyle = {
     width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
     color: '#f8fafc', borderRadius: '12px', padding: '12px 14px', fontSize: '14px',
-    outline: 'none', fontFamily: 'Inter, sans-serif',
-    boxSizing: 'border-box',
+    outline: 'none', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box'
+  };
+
+  const selectStyle = {
+    ...baseInputStyle,
+    WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', backgroundSize: '16px'
   };
 
   return (
@@ -268,7 +274,7 @@ export default function EmployeeList() {
                 ].map(({ field, label, type, placeholder }) => (
                   <div key={field}>
                     <label style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>{label}</label>
-                    <input type={type} value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} placeholder={placeholder} style={inputStyle} required />
+                    <input type={type} value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} placeholder={placeholder} style={baseInputStyle} required />
                   </div>
                 ))}
 
@@ -279,7 +285,7 @@ export default function EmployeeList() {
                 ].map(({ field, label, options }) => (
                   <div key={field}>
                     <label style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>{label}</label>
-                    <select value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} style={{ ...inputStyle }}>
+                    <select value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} style={selectStyle}>
                       <option value="">Select {label}</option>
                       {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
@@ -288,7 +294,7 @@ export default function EmployeeList() {
 
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>Base Salary (₹)</label>
-                  <input type="number" value={form.salary} onChange={e => setForm(p => ({ ...p, salary: e.target.value }))} placeholder="50000" style={inputStyle} />
+                  <input type="number" value={form.salary} onChange={e => setForm(p => ({ ...p, salary: e.target.value }))} placeholder="50000" style={baseInputStyle} />
                 </div>
 
                 <motion.button type="submit" disabled={submitting} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}

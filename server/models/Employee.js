@@ -37,6 +37,7 @@ const Employee = sequelize.define('Employee', {
   bio: { type: DataTypes.TEXT },
   about_job: { type: DataTypes.TEXT },
   interests: { type: DataTypes.TEXT },
+  profile_picture: { type: DataTypes.TEXT }, // Storing base64 image or URL
   // Salary Info
   wage_type: { type: DataTypes.STRING, defaultValue: 'fixed' },
   monthly_wage: { type: DataTypes.FLOAT, defaultValue: 0 },

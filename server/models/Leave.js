@@ -13,7 +13,7 @@ const Leave = sequelize.define('Leave', {
     references: { model: 'employees', key: 'id' },
   },
   leave_type: {
-    type: DataTypes.ENUM('sick', 'casual', 'earned', 'unpaid'),
+    type: DataTypes.STRING,
     allowNull: false,
   },
   start_date: {
