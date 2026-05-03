@@ -96,8 +96,9 @@ EmPay HRMS is a comprehensive, enterprise-grade Human Resource Management System
 - **UI Scalability**: Virtualization and pagination techniques used for handling large lists.
 - **Geofencing Infrastructure**: Modular design allows for easy integration of location-based login rules.
 
-## 📄 License
-This project is licensed under the MIT License.
+
 
 ---
 Developed with ❤️ by Prince Malaviya
+DAKSH SAVANI
+DEV KHUNT
