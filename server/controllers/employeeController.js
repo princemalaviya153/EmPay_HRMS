@@ -54,7 +54,7 @@ exports.getEmployee = async (req, res) => {
 
 exports.createEmployee = async (req, res) => {
   try {
-    const { name, email, password, department, designation, joining_date, basic_salary, phone, address } = req.body;
+    const { name, email, password, department, designation, joining_date, basic_salary, phone, address, role, hra_pct, standard_pct, bonus_pct, lta_pct, fixed_pct, pf_rate } = req.body;
 
     // Create user account first
     const user = await User.create({
@@ -75,6 +75,12 @@ exports.createEmployee = async (req, res) => {
       basic_salary: basic_salary || 0,
       phone,
       address,
+      hra: hra_pct || 50,
+      conveyance: standard_pct || 16.67,
+      performance_bonus: bonus_pct || 8.33,
+      leave_travel_allowance: lta_pct || 8.33,
+      special_allowance: fixed_pct || 16.67,
+      pf_rate: pf_rate || 12,
     });
 
     // Auto-allocate leaves for current year

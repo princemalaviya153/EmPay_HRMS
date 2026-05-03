@@ -5,22 +5,24 @@ exports.getLaborCostReport = async (req, res) => {
   try {
     const { year } = req.query;
     const targetYear = year || new Date().getFullYear();
-    const monthlyData = [];
+    
+    const allPayrolls = await Payroll.findAll({
+      where: { pay_period_year: targetYear },
+    });
 
-    for (let m = 1; m <= 12; m++) {
-      const payrolls = await Payroll.findAll({
-        where: { pay_period_month: m, pay_period_year: targetYear },
-      });
-      monthlyData.push({
+    const monthlyData = Array.from({ length: 12 }, (_, i) => {
+      const m = i + 1;
+      const payrolls = allPayrolls.filter(p => p.pay_period_month === m);
+      return {
         month: m,
-        monthName: new Date(2024, m - 1).toLocaleString('default', { month: 'short' }),
+        monthName: new Date(2024, i).toLocaleString('default', { month: 'short' }),
         totalGross: payrolls.reduce((s, p) => s + (p.gross_salary || 0), 0),
         totalNet: payrolls.reduce((s, p) => s + (p.net_pay || 0), 0),
         totalPF: payrolls.reduce((s, p) => s + (p.pf_employee || 0) + (p.pf_employer || 0), 0),
         totalPT: payrolls.reduce((s, p) => s + (p.professional_tax || 0), 0),
         employeeCount: payrolls.length,
-      });
-    }
+      };
+    });
 
     const totals = monthlyData.reduce((acc, m) => ({
       totalGross: acc.totalGross + m.totalGross,

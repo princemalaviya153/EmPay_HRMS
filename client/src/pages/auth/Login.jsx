@@ -9,9 +9,9 @@ import Background3D from '../../components/Background3D';
 
 const DEMO = [
   { label: 'Admin', icon: '👑', email: 'admin@empay.com', pw: 'Admin@123', color: '#6366f1', desc: 'Full access' },
-  { label: 'HR', icon: '👥', email: 'priya@empay.com', pw: 'Pass@123', color: '#8b5cf6', desc: 'HR module' },
-  { label: 'Payroll', icon: '💰', email: 'rahul@empay.com', pw: 'Pass@123', color: '#06b6d4', desc: 'Payroll module' },
-  { label: 'Employee', icon: '👤', email: 'anita@empay.com', pw: 'Pass@123', color: '#10b981', desc: 'Self-service' },
+  { label: 'HR', icon: '👥', email: 'hr@empay.com', pw: 'Hr@123', color: '#8b5cf6', desc: 'HR module' },
+  { label: 'Payroll', icon: '💰', email: 'payroll@empay.com', pw: 'Pay@123', color: '#06b6d4', desc: 'Payroll module' },
+  { label: 'Employee', icon: '👤', email: 'emp@empay.com', pw: 'Emp@123', color: '#10b981', desc: 'Self-service' },
 ];
 
 export default function Login() {

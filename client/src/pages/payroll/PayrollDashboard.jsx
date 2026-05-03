@@ -29,6 +29,8 @@ export default function PayrollDashboard() {
   const [generating,  setGenerating]  = useState(false);
   const [validating,  setValidating]  = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   useEffect(() => { load(); }, [month, year]);
 
@@ -41,8 +43,12 @@ export default function PayrollDashboard() {
       ]);
       setPayrolls(pr.data.payrolls || []);
       setEmployees(empRes.data.employees || []);
+      setCurrentPage(1); // Reset page on month/year change
     } finally { setLoading(false); }
   };
+
+  const totalPages = Math.ceil(payrolls.length / itemsPerPage);
+  const paginatedPayrolls = payrolls.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -248,7 +254,7 @@ export default function PayrollDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {payrolls.map((p, i) => {
+                    {paginatedPayrolls.map((p, i) => {
                       const st = statusStyle(p.status);
                       const gross = p.gross_pay || p.gross_salary || 0;
                       return (
@@ -302,6 +308,39 @@ export default function PayrollDashboard() {
                     )}
                   </tbody>
                 </table>
+              )}
+
+              {/* Pagination Controls */}
+              {!loading && payrolls.length > itemsPerPage && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    style={{ 
+                      padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)', color: currentPage === 1 ? '#334155' : '#94a3b8',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '600'
+                    }}
+                  >
+                    ← Previous
+                  </button>
+                  
+                  <span style={{ color: '#64748b', fontSize: '13px' }}>
+                    Page <span style={{ color: '#e2e8f0' }}>{currentPage}</span> of <span style={{ color: '#e2e8f0' }}>{totalPages}</span>
+                  </span>
+
+                  <button 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    style={{ 
+                      padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)', color: currentPage === totalPages ? '#334155' : '#94a3b8',
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '600'
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
               )}
 
               {/* Legend */}

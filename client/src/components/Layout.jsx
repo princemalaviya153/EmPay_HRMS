@@ -1,6 +1,6 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import { Bell, Search, Command, LogOut, User, Clock, ChevronDown } from 'lucide-react';
+import { Search, Command, LogOut, User, Clock, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { checkInAPI, checkOutAPI, getTodayStatusAPI } from '../api';
 import { useState, useEffect, useRef } from 'react';
@@ -148,24 +148,7 @@ export default function Layout() {
               {checkLoading ? '...' : checkedIn ? 'Check Out →' : 'Check In →'}
             </motion.button>
 
-            {/* Notification */}
-            <motion.button
-              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              style={{
-                width: '36px', height: '36px', borderRadius: '10px', position: 'relative',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#475569', cursor: 'pointer',
-              }}
-            >
-              <Bell size={16} />
-              <span style={{
-                position: 'absolute', top: '7px', right: '7px',
-                width: '7px', height: '7px', borderRadius: '50%',
-                background: '#f43f5e', border: '1.5px solid #020817',
-                boxShadow: '0 0 6px rgba(244,63,94,0.6)',
-              }} />
-            </motion.button>
+
 
             {/* Divider */}
             <div style={{ width: '1px', height: '28px', background: 'rgba(255,255,255,0.06)' }} />

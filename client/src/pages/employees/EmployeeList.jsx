@@ -32,18 +32,24 @@ export default function EmployeeList() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
-  const [form, setForm] = useState({ name: '', email: '', password: 'Employee@123', role: 'employee', department: '', position: '', salary: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const navigate = useNavigate();
 
   useEffect(() => { load(); }, []);
   useEffect(() => {
     const q = search.toLowerCase();
-    setFiltered(employees.filter(e =>
+    const filteredList = employees.filter(e =>
       e.user?.name?.toLowerCase().includes(q) || e.department?.toLowerCase().includes(q) ||
       e.position?.toLowerCase().includes(q) || e.employee_code?.toLowerCase().includes(q)
-    ));
+    );
+    setFiltered(filteredList);
+    setCurrentPage(1); // Reset to page 1 when search changes
   }, [search, employees]);
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedEmployees = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const load = async () => {
     setLoading(true);
@@ -131,7 +137,7 @@ export default function EmployeeList() {
         </div>
       ) : viewMode === 'grid' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-          {filtered.map((emp, i) => {
+          {paginatedEmployees.map((emp, i) => {
             const role = emp.user?.role || 'employee';
             const initials = (emp.user?.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             const color = roleColors[role] || '#818cf8';
@@ -207,7 +213,7 @@ export default function EmployeeList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((emp, i) => {
+              {paginatedEmployees.map((emp, i) => {
                 const role = emp.user?.role || 'employee';
                 const color = roleColors[role] || '#818cf8';
                 const initials = (emp.user?.name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -247,6 +253,39 @@ export default function EmployeeList() {
               <p style={{ fontSize: '14px' }}>No employees found</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && filtered.length > itemsPerPage && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginTop: '40px', paddingBottom: '40px' }}>
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            style={{ 
+              padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)', color: currentPage === 1 ? '#334155' : '#94a3b8',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '600'
+            }}
+          >
+            ← Previous
+          </button>
+          
+          <span style={{ color: '#64748b', fontSize: '14px', fontWeight: '500' }}>
+            Page <span style={{ color: '#e2e8f0' }}>{currentPage}</span> of <span style={{ color: '#e2e8f0' }}>{totalPages}</span>
+          </span>
+
+          <button 
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            style={{ 
+              padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(255,255,255,0.03)', color: currentPage === totalPages ? '#334155' : '#94a3b8',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '13px', fontWeight: '600'
+            }}
+          >
+            Next →
+          </button>
         </div>
       )}
 
@@ -295,6 +334,25 @@ export default function EmployeeList() {
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: '8px' }}>Base Salary (₹)</label>
                   <input type="number" value={form.salary} onChange={e => setForm(p => ({ ...p, salary: e.target.value }))} placeholder="50000" style={baseInputStyle} />
+                </div>
+
+                <div style={{ marginTop: '4px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ fontSize: '13px', color: '#e2e8f0', marginBottom: '12px', fontWeight: '600' }}>Allowances & Deductions (%)</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {[
+                      { field: 'hra_pct', label: 'HRA %' }, 
+                      { field: 'standard_pct', label: 'Standard Allow %' }, 
+                      { field: 'bonus_pct', label: 'Bonus %' }, 
+                      { field: 'lta_pct', label: 'LTA %' }, 
+                      { field: 'fixed_pct', label: 'Fixed Allow %' }, 
+                      { field: 'pf_rate', label: 'PF Rate %' }
+                    ].map(({ field, label }) => (
+                      <div key={field}>
+                        <label style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>{label}</label>
+                        <input type="number" step="0.01" value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: parseFloat(e.target.value) || 0 }))} style={{ ...baseInputStyle, padding: '8px 12px' }} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <motion.button type="submit" disabled={submitting} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}

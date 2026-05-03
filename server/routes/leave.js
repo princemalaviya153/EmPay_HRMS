@@ -6,8 +6,8 @@ const { allow } = require('../middleware/roleCheck');
 router.post('/apply', auth, ctrl.applyLeave);
 router.get('/my', auth, ctrl.getMyLeaves);
 router.get('/all', auth, allow('admin', 'hr_officer', 'payroll_officer'), ctrl.getAllLeaves);
-router.put('/:id/approve', auth, allow('admin', 'payroll_officer'), ctrl.approveLeave);
-router.put('/:id/reject', auth, allow('admin', 'payroll_officer'), ctrl.rejectLeave);
+router.put('/:id/approve', auth, allow('admin', 'hr_officer', 'payroll_officer'), ctrl.approveLeave);
+router.put('/:id/reject', auth, allow('admin', 'hr_officer', 'payroll_officer'), ctrl.rejectLeave);
 router.post('/allocate', auth, allow('admin', 'hr_officer'), ctrl.allocateLeave);
 
 module.exports = router;

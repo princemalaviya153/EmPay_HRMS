@@ -8,32 +8,54 @@ exports.generatePayrun = async (req, res) => {
     const { month, year } = req.body;
     const employees = await Employee.findAll({ where: { is_active: true } });
     const daysInMonth = getWorkingDaysInMonth(year, month);
-    const results = [];
+    
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate   = new Date(year, month, 0).toISOString().split('T')[0];
+
+    // Bulk fetch attendances for all employees in this period
+    const allAttendances = await Attendance.findAll({
+      where: { date: { [Op.between]: [startDate, endDate] } },
+    });
+
+    // Bulk fetch existing payrolls to avoid duplicates
+    const existingPayrolls = await Payroll.findAll({
+      where: { pay_period_month: month, pay_period_year: year },
+      attributes: ['employee_id']
+    });
+    const existingIds = new Set(existingPayrolls.map(p => p.employee_id));
+
+    // Map attendances to employees
+    const attMap = {};
+    allAttendances.forEach(a => {
+      if (!attMap[a.employee_id]) attMap[a.employee_id] = [];
+      attMap[a.employee_id].push(a);
+    });
+
+    const payrollsToCreate = [];
 
     for (const emp of employees) {
-      const existing = await Payroll.findOne({
-        where: { employee_id: emp.id, pay_period_month: month, pay_period_year: year },
-      });
-      if (existing) { results.push(existing); continue; }
+      if (existingIds.has(emp.id)) continue;
 
-      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-      const endDate   = new Date(year, month, 0).toISOString().split('T')[0];
-
-      const attendances = await Attendance.findAll({
-        where: { employee_id: emp.id, date: { [Op.between]: [startDate, endDate] } },
-      });
-
+      const empAtt = attMap[emp.id] || [];
       const daysWorked =
-        attendances.filter(a => a.status === 'present' || a.status === 'on_leave').length +
-        attendances.filter(a => a.status === 'half_day').length * 0.5;
+        empAtt.filter(a => a.status === 'present' || a.status === 'on_leave').length +
+        empAtt.filter(a => a.status === 'half_day').length * 0.5;
 
       const calc = calculatePayroll({
         basicSalary: emp.basic_salary,
         daysWorked,
         daysInMonth,
+        percentages: {
+          hra: emp.hra || 50,
+          standard_allowance: emp.conveyance || 16.67,
+          performance_bonus: emp.performance_bonus || 8.33,
+          lta: emp.leave_travel_allowance || 8.33,
+          fixed_allowance: emp.special_allowance || 16.67,
+          pf_rate: emp.pf_rate || 12,
+        }
       });
 
-      const payroll = await Payroll.create({
+      payrollsToCreate.push({
         employee_id:      emp.id,
         pay_period_month: month,
         pay_period_year:  year,
@@ -62,12 +84,15 @@ exports.generatePayrun = async (req, res) => {
         status:       'processed',
         generated_by: req.user.id,
       });
-      results.push(payroll);
+    }
+
+    let results = [];
+    if (payrollsToCreate.length > 0) {
+      results = await Payroll.bulkCreate(payrollsToCreate);
     }
 
     res.status(201).json({
       message: `Payrun generated for ${month}/${year}`,
-      payrolls: results,
       count: results.length,
     });
   } catch (error) {

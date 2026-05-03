@@ -10,7 +10,16 @@ const app = express();
 
 // Security
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+app.use(cors({ 
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176'
+  ], 
+  credentials: true 
+}));
 
 // Rate limiting for auth routes
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 2000, message: { message: 'Too many attempts, try again later' } });

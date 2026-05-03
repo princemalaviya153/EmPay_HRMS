@@ -51,6 +51,8 @@ export default function AttendanceLogs() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   
   // Employee state
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -125,6 +127,9 @@ export default function AttendanceLogs() {
     e.employee_code?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ maxWidth: '1400px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
@@ -161,7 +166,7 @@ export default function AttendanceLogs() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ position: 'relative' }}>
                 <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                <input type="text" placeholder="Search employee..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: '36px', width: '220px' }} />
+                <input type="text" placeholder="Search employee..." value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} style={{ ...inputStyle, paddingLeft: '36px', width: '220px' }} />
               </div>
             </div>
           </div>
@@ -182,7 +187,7 @@ export default function AttendanceLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((emp, i) => {
+                  {paginatedEmployees.map((emp, i) => {
                     const att = emp.attendance;
                     return (
                       <motion.tr key={emp.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
@@ -215,6 +220,39 @@ export default function AttendanceLogs() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!loading && filteredEmployees.length > itemsPerPage && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                style={{ 
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.03)', color: currentPage === 1 ? '#334155' : '#94a3b8',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '600'
+                }}
+              >
+                ← Previous
+              </button>
+              
+              <span style={{ color: '#64748b', fontSize: '13px' }}>
+                Page <span style={{ color: '#e2e8f0' }}>{currentPage}</span> of <span style={{ color: '#e2e8f0' }}>{totalPages}</span>
+              </span>
+
+              <button 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                style={{ 
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(255,255,255,0.03)', color: currentPage === totalPages ? '#334155' : '#94a3b8',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontSize: '12px', fontWeight: '600'
+                }}
+              >
+                Next →
+              </button>
             </div>
           )}
         </motion.div>

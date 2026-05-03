@@ -131,17 +131,22 @@ export default function AdminDashboard() {
       const totalPayroll = payrolls.reduce((s, p) => s + (p.net_pay || 0), 0);
       setStats({ totalEmp: employees.length, present: todayRes.data.present || 0, pendingLeaves: (leaveRes.data.leaves || []).length, totalPayroll });
 
+      const limitNames = (names) => {
+        if (names.length <= 5) return names.join(', ');
+        return `${names.slice(0, 5).join(', ')} and ${names.length - 5} others`;
+      };
+
       const newWarnings = [];
-      if (missingBankNames.length > 0) newWarnings.push(`Missing Bank Account: ${missingBankNames.join(', ')}`);
-      if (missingManagerNames.length > 0) newWarnings.push(`Unassigned Manager: ${missingManagerNames.join(', ')}`);
+      if (missingBankNames.length > 0) newWarnings.push(`Missing Bank Account: ${limitNames(missingBankNames)}`);
+      if (missingManagerNames.length > 0) newWarnings.push(`Unassigned Manager: ${limitNames(missingManagerNames)}`);
       
       const presentIds = (todayRes.data.records || []).map(r => r.employee_id);
       const absentNames = employees.filter(e => !presentIds.includes(e.id)).map(e => e.user?.name || e.employee_code);
-      if (absentNames.length > 0) newWarnings.push(`Absent Today: ${absentNames.join(', ')}`);
+      if (absentNames.length > 0) newWarnings.push(`Absent Today: ${limitNames(absentNames)}`);
 
       const paidIds = payrolls.map(p => p.employee_id);
       const unpaidNames = employees.filter(e => !paidIds.includes(e.id)).map(e => e.user?.name || e.employee_code);
-      if (unpaidNames.length > 0) newWarnings.push(`Unpaid this month: ${unpaidNames.join(', ')}`);
+      if (unpaidNames.length > 0) newWarnings.push(`Unpaid this month: ${limitNames(unpaidNames)}`);
 
       if (payrolls.filter(p => p.status === 'draft').length > 0) newWarnings.push('Payrun has draft entries waiting for approval.');
 

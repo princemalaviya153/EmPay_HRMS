@@ -27,24 +27,31 @@ function getProfessionalTax(grossSalary) {
  * - PF Employer = 12% of basic (employer cost add-on)
  * - Professional Tax (slab-based)
  */
-function calculatePayroll({ basicSalary, daysWorked, daysInMonth, otherDeductions = 0 }) {
+function calculatePayroll({ basicSalary, daysWorked, daysInMonth, otherDeductions = 0, percentages = {} }) {
+  // Use provided percentages or fallback to defaults
+  const hraPct = (percentages.hra !== undefined ? percentages.hra : 50) / 100;
+  const standardAllowancePct = (percentages.standard_allowance !== undefined ? percentages.standard_allowance : 16.67) / 100;
+  const performanceBonusPct = (percentages.performance_bonus !== undefined ? percentages.performance_bonus : 8.33) / 100;
+  const ltaPct = (percentages.lta !== undefined ? percentages.lta : 8.33) / 100;
+  const fixedAllowancePct = (percentages.fixed_allowance !== undefined ? percentages.fixed_allowance : 16.67) / 100;
+  const pfRate = (percentages.pf_rate !== undefined ? percentages.pf_rate : 12) / 100;
+
   // Attendance-prorated basic for worked days
   const proratedBasic = parseFloat(((basicSalary / daysInMonth) * daysWorked).toFixed(2));
 
   // Allowances are based on prorated basic
-  const hra                = parseFloat((proratedBasic * 0.5).toFixed(2));
-  const standardAllowance  = parseFloat((proratedBasic * (1 / 6)).toFixed(2));
-  const performanceBonus   = parseFloat((proratedBasic * (1 / 12)).toFixed(2));
-  const lta                = parseFloat((proratedBasic * (1 / 12)).toFixed(2));
-  const fixedAllowance     = parseFloat((proratedBasic * (1 / 6)).toFixed(2));
+  const hra                = parseFloat((proratedBasic * hraPct).toFixed(2));
+  const standardAllowance  = parseFloat((proratedBasic * standardAllowancePct).toFixed(2));
+  const performanceBonus   = parseFloat((proratedBasic * performanceBonusPct).toFixed(2));
+  const lta                = parseFloat((proratedBasic * ltaPct).toFixed(2));
+  const fixedAllowance     = parseFloat((proratedBasic * fixedAllowancePct).toFixed(2));
 
   const allowances = parseFloat((hra + standardAllowance + performanceBonus + lta + fixedAllowance).toFixed(2));
   const grossSalary = parseFloat((proratedBasic + allowances).toFixed(2));
 
-  // PF: 12% of full (non-prorated) basic salary
-  const PF_RATE = 0.12;
-  const pfEmployee = parseFloat((basicSalary * PF_RATE).toFixed(2));
-  const pfEmployer = parseFloat((basicSalary * PF_RATE).toFixed(2));
+  // PF: based on full (non-prorated) basic salary
+  const pfEmployee = parseFloat((basicSalary * pfRate).toFixed(2));
+  const pfEmployer = parseFloat((basicSalary * pfRate).toFixed(2));
 
   // Professional Tax based on gross
   const professionalTax = getProfessionalTax(grossSalary);
